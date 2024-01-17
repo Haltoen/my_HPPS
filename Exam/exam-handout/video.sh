@@ -19,8 +19,8 @@ fi
 PARTICLES=$1
 
 FPS=24 # Frames per second
-FRAMES=1000 # Total frames
-NBODY=./nbody-bh # Simulation program
+FRAMES=100 # Total frames
+NBODY=./nbody # Simulation program
 STEPS_PER_FRAME=1 # Steps done per frame
 
 if ! which gnuplot >/dev/null; then
