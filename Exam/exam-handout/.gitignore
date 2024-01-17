@@ -1,0 +1,8 @@
+*.o
+nbody
+nbody-bh
+particles2text
+genparticles
+frames
+video.mp4
+particles
