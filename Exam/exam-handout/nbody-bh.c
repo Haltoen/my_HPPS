@@ -3,8 +3,10 @@
 #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
-#include "util.h"
 #include <string.h>
+#include <omp.h>
+#include "util.h"
+
 
 
 
@@ -144,10 +146,8 @@ struct bh_node {
 void bh_mk_internal(struct bh_node* bh) {
   // Must not already be internal.
   assert(!bh->internal);
-
   struct bh_node** children = malloc(8 * sizeof(struct bh_node*)); // Allocate an array of pointers
   
-
   // Set corners and initialize other fields for each child
   for (int i = 0; i < 8; i++) {
     double x, y, z;
@@ -191,14 +191,11 @@ void bh_insert(struct bh_node* bh, struct particle* ps, int p) {
   if (bh->internal) {
     // This is an internal node. Recursively insert the particle in
     // the appropriate child (computed with octant()), then update the
-    // centre of mass.
-    
+    // centre of mass
     int child_ind = octant(bh->corner, bh->l, &ps[p]);
-    printf("Internal q_ind %d \n", child_ind);
     struct bh_node* child = bh->children[child_ind];
     add_mass(&bh->com, &bh->mass, ps[p]);
     bh_insert(child, ps, p);
-  
   // External case: place directly or make new split and place 
   } else {
     // This is an external node.
@@ -206,40 +203,19 @@ void bh_insert(struct bh_node* bh, struct particle* ps, int p) {
       // This is an external node currently with no particle, so we
       // can just insert the new particle.
       bh->particle = p;
-      printf("placed %d \n", p);
     } else {
       // This is an external node that already has a particle. We must
       // convert it into an internal node with initially zero mass,
       // and then insert both the new particle *and* the one it
       // previously contained, using recursive calls to bh_insert.
-      
       int bh_p = bh->particle; // copy bh particle index
       bh_mk_internal(bh); // make bh internal (resets com & mass)
-      printf("Split %d, %d \n", p, bh_p);
       bh_insert(bh, ps, p);
       bh_insert(bh, ps, bh_p);
-      /*
-    
-
-      int p_ind = octant(bh->corner, bh->l, &ps[bh_p]);
-      struct bh_node* child = bh->children[p_ind];
-      // Update the center of mass and mass of the internal node
-      add_mass(&bh->com, &bh->mass, ps[bh_p]);
-      bh_insert(bh, ps, p);
-      bh_insert(child, ps, bh_p);
-      */
     }
   }
 }
 
-void free_children(struct bh_node* bh) {
-  if (bh->internal) {
-    for (int i = 0; i < 8; i++) {
-      free_children(bh->children[i]);
-    }
-    free(*bh->children);
-  }
-}
 // Free all memory used for the tree.
 void bh_free(struct bh_node* bh) {
   if (bh->internal) {
@@ -250,7 +226,6 @@ void bh_free(struct bh_node* bh) {
   free(bh);
 }
 
-
 // Compute the accel acting on particle 'p'.  Increments *ax, *ay, and *az.
 void bh_accel(double theta, struct bh_node* bh,
               struct particle* ps, int p,
@@ -258,7 +233,7 @@ void bh_accel(double theta, struct bh_node* bh,
   struct vec3 pos = ps[p].pos;              
   if (bh->internal) {
     double d = dist(bh->com, pos);
-    // Use com if far awa
+    // Use com if far away
     if (bh->l / d < theta) {
       *a = add_vec3(*a, force(pos, bh->com, bh->mass));
     }
@@ -304,8 +279,6 @@ void calculate_min_max(struct particle* ps, int n, double* min, double* max) {
 void nbody(int n, struct particle *ps, int steps, double theta) {
     // Determine the minimum and maximum coordinates among all particles
     double min_coord, max_coord;
-    
-
     struct bh_node* octree = NULL;  // Initialize octree pointer outside the loop
 
     for (int s = 0; s < steps; s++) {
@@ -319,6 +292,7 @@ void nbody(int n, struct particle *ps, int steps, double theta) {
         }
 
         // Compute accelerations and update velocities
+        #pragma omp parallel for
         for (int i = 0; i < n; i++) {
             struct vec3 acceleration = {0.0, 0.0, 0.0};
             bh_accel(theta, octree, ps, i, &acceleration);
@@ -329,8 +303,6 @@ void nbody(int n, struct particle *ps, int steps, double theta) {
         for (int i = 0; i < n; i++) {
             ps[i].pos = add_vec3(ps[i].pos, ps[i].vel);
         }
-        // Print an update (if desired)
-        printf("Step %d\n", s);
         bh_free(octree);
     }
 }

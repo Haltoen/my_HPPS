@@ -13,4 +13,5 @@ clean:
 %.o: %.c
 	$(CC) -c $< $(CFLAGS)
 
+
 .SUFFIXES: # Disables implicit rules.  (Don't worry about it.)

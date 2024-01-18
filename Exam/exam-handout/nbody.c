@@ -5,31 +5,7 @@
 #include <omp.h>
 #include "util.h"
 
-struct vec3 add_vec3(struct vec3 pi, struct vec3 pj) {
-  double ix = pi.x;
-  double iy = pi.y;
-  double iz = pi.z;
-  double jx = pj.x;
-  double jy = pj.y;
-  double jz = pj.z;
-  struct vec3 newVec;
-  newVec.x = ix + jx; 
-  newVec.y = iy + jy; 
-  newVec.z = iz + jz; 
-  return newVec;
-}
 
-
-struct vec3 scalar_mul_vec3(double c, struct vec3 p) {
-  double x = p.x;
-  double y = p.y;
-  double z = p.z;
-  struct vec3 newVec;
-  newVec.x = c * x; 
-  newVec.y = c * y; 
-  newVec.z = c * z; 
-  return newVec;
-}
 
 // Naive solution O(n^2)
 void nbody(int n, struct particle *ps, int steps) {
@@ -52,7 +28,6 @@ void nbody(int n, struct particle *ps, int steps) {
           acc_y += f.y;
           acc_z += f.z;
           
-          //acc = add_vec3(acc, f);
         }
       }
       //struct vec3 new_vel = add_vec3(ps[i].vel, acc); // update velocity with acceleration
